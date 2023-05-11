@@ -101,8 +101,8 @@ namespace InstantiatedDiskInterface {
     int status = io_getevents(ioctx.ctx, 0, 1, &event, NULL);
     if (status == 0) return Ptrs::null_ptr();
     assert (status == 1);
-    assert (event.res > 0);
     iocb* i = event.obj;
+    assert (event.res > 0 || i->aio_lio_opcode == IO_CMD_PREADV);
     return Ptrs::Ptr((uintptr_t)i);
   }
 }
