@@ -44,8 +44,8 @@ rm -f $filename
 
 # Unverified
 ./scripts/run_ycsb.py ycsb_results/unverified $runs --memory $memorysizes --trace_dir $tracedir --threads $threads --db_size $dbsize --config "--set-O_DIRECT --db-location $filename --set-hugetlb"
-rm $filename
+rm -f $filename
 
 # IronSync
-./scripts/run_ycsb.py ycsb_results/ironsync $runs --memory $memorysizes --trace_dir $tracedir --threads $threads --db_size $dbsize --config "--set-O_DIRECT --db-location $filename --set-hugetlb --ironsync"
-rm $filename
+./scripts/run_ycsb.py ycsb_results/ironsync $runs --memory $memorysizes --trace_dir $tracedir --threads $threads --db_size $dbsize --config "--set-O_DIRECT --db-location $filename --set-hugetlb" --ironsync
+rm -f $filename

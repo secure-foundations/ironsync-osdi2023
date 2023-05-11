@@ -5113,6 +5113,9 @@ splinter_split_leaf(splinter_handle *spl,
    {
       target_num_leaves = 2;
    }
+   if (target_num_leaves == 0) {
+      target_num_leaves = 1;
+   }
    uint64 target_leaf_tuples = num_tuples / target_num_leaves;
    uint64 target_num_pivots =
       (target_leaf_tuples - 1) / spl->cfg.btree_cfg.tuples_per_leaf + 1;
