@@ -36,12 +36,18 @@ class core_map {
   core_policy cr_policy;
   typedef uint32_t core_id;
   std::vector<core_id> thread_to_core_map;
+  std::vector<uint32_t> core_to_node_map;
 
  public:
+  uint32_t get_node_for_core(core_id core) {
+    return core_to_node_map.at(core);
+  }
+
   core_map(numa_policy nm_policy, core_policy cr_policy)
     : nm_policy{nm_policy}
     , cr_policy{cr_policy}
     , thread_to_core_map{}
+    , core_to_node_map{}
   {
     if (numa_available() == -1) {
       std::cerr << "NUMA not available" << std::endl;
@@ -75,6 +81,7 @@ class core_map {
 
     std::vector<core_id> core_ids{};
     thread_to_core_map.resize(n_cores);
+    core_to_node_map.resize(512);
 
     uint32_t i = 0;
     switch (nm_policy) {
@@ -84,12 +91,14 @@ class core_map {
         for (uint32_t n = 0; n < n_nodes; n++) {
           for (uint32_t c = 0; c < n_cores / 2; c++) {
             if (numa_bitmask_isbitset(&*nodecpus[n], c))
+              core_to_node_map[c] = n;
               thread_to_core_map[i++] = c;
           }
         }
         for (uint32_t n = 0; n < n_nodes; n++) {
           for (uint32_t c = n_cores / 2; c < n_cores; c++) {
             if (numa_bitmask_isbitset(&*nodecpus[n], c))
+              core_to_node_map[c] = n;
               thread_to_core_map[i++] = c;
           }
         }
@@ -102,6 +111,8 @@ class core_map {
           i = 0;
           for (uint32_t c = 0; c < n_cores; c++) {
             if (numa_bitmask_isbitset(&*nodecpus[n], c))
+              core_to_node_map[c] = n;
+              // thread_to_node_map[n + (i++) * n_nodes] = n;
               thread_to_core_map[n + (i++) * n_nodes] = c;
           }
         }
@@ -127,6 +138,8 @@ class core_map {
     }
     return core_id;
   }
+
+
 
   uint32_t n_active_nodes(uint32_t n_threads, uint32_t (*get_node_id)(uint32_t)) {
     std::unordered_set<uint32_t> active_nodes{};

@@ -34,6 +34,8 @@ namespace nr = NRImpl_ON_VSpaceIfc__Compile;
 namespace nrinit = Init_ON_VSpaceIfc__Compile;
 #endif
 
+
+
 class nr_helper {
   uint32_t n_threads_per_replica;
   std::optional<nr::NR> nr;
@@ -44,13 +46,14 @@ class nr_helper {
   /// Maps NodeId to vector of ThreadOwnedContexts for that Node.
   std::vector<lseq<nr::ThreadOwnedContext>> thread_owned_contexts;
   std::condition_variable all_nodes_init;
+  core_map& cores;
 
  public:
   static uint64_t num_replicas() {
     return NRConstants_Compile::__default::NUM__REPLICAS;
   }
 
-  nr_helper(size_t n_threads)
+  nr_helper(size_t n_threads, core_map& in_cores)
     : n_threads_per_replica{static_cast<uint32_t>(n_threads / num_replicas())}
     , nr{}
     , init_mutex{}
@@ -59,6 +62,7 @@ class nr_helper {
     , nodes{}
     , thread_owned_contexts{}
     , all_nodes_init{}
+    , cores{in_cores}
   {
     nodes.resize(num_replicas());
     thread_owned_contexts.resize(num_replicas());
@@ -69,8 +73,8 @@ class nr_helper {
 
   nr::NR& get_nr() { return *nr; }
 
-  static uint32_t get_node_id(uint32_t core_id) {
-    return core_id  % NRConstants_Compile::__default::NUM__REPLICAS;
+  uint32_t get_node_id(uint32_t core_id) {
+    return cores.get_node_for_core(core_id);
   }
 
   nr::Node* get_node(uint32_t core_id) {
@@ -137,19 +141,21 @@ class nr_rust_helper {
   size_t nodes_init;
   std::vector<ReplicaWrapper*> nodes;
   std::condition_variable all_nodes_init;
+  core_map& cores;
 
  public:
   static size_t num_replicas() {
     return NRConstants_Compile::__default::NUM__REPLICAS;
   }
 
-  nr_rust_helper(size_t n_threads)
+  nr_rust_helper(size_t n_threads, core_map& in_cores)
     : n_threads_per_replica{static_cast<uint32_t>(n_threads / num_replicas())}
     , log{createLog()}
     , init_mutex{}
     , nodes_init{}
     , nodes{}
     , all_nodes_init{}
+    , cores{in_cores}
   {
     nodes.resize(num_replicas());
     assert(num_replicas() > 0);
@@ -161,8 +167,8 @@ class nr_rust_helper {
     // NYI
   }
 
-  static uint32_t get_node_id(uint32_t core_id) {
-    return core_id % NRConstants_Compile::__default::NUM__REPLICAS;
+  uint32_t get_node_id(uint32_t core_id) {
+     return cores.get_node_for_core(core_id);
   }
 
   ReplicaWrapper *get_node(uint32_t core_id)

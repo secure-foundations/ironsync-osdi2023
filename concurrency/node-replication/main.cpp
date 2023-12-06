@@ -11,8 +11,9 @@
 #include <shared_mutex>
 #include <condition_variable>
 #include "vspace_glue.h"
-#include "nr.h"
 #include "thread_pin.h"
+#include "nr.h"
+
 
 #ifdef __clang__
 extern "C" {
@@ -33,7 +34,7 @@ class key_generator {
   //
   //static constexpr uint64_t MASK = 0x3fffffffff & ~0xfff; // 256 GiB
   static constexpr uint64_t MASK = 0x7fffffffff & ~0xfff; // 512 GiB
-  
+
 
 public:
   key_generator(uint8_t thread_id)
@@ -188,7 +189,7 @@ struct cpp_shared_mutex_monitor {
   ::VSpacePtr vspace;
 #endif
 
-  cpp_shared_mutex_monitor(size_t n_threads)
+  cpp_shared_mutex_monitor(size_t n_threads, core_map& in_cores)
     : mutex{}
 #if USE_COUNTER
     , value{}
@@ -239,7 +240,7 @@ struct mcs_monitor {
   ::VSpacePtr vspace;
 #endif
 
-  mcs_monitor(size_t n_threads)
+  mcs_monitor(size_t n_threads, core_map& in_cores)
     : mutex{mcs_mutex_create(NULL)}
 #if USE_COUNTER
     , value{}
@@ -297,7 +298,7 @@ struct shfllock_monitor {
   ::VSpacePtr vspace;
 #endif
 
-  shfllock_monitor(size_t n_threads)
+  shfllock_monitor(size_t n_threads, core_map& in_cores)
     : mutex{aqs_mutex_create(NULL)}
 #if USE_COUNTER
     , value{}
@@ -359,7 +360,7 @@ typedef rwlock::RwLock RwLockT;
 struct dafny_rwlock_monitor {
   RwLockT lock;
 
-  dafny_rwlock_monitor(size_t n_threads)
+  dafny_rwlock_monitor(size_t n_threads, core_map& in_cores)
   #if USE_COUNTER
     : lock{rwlock::__default::new__mutex(0lu)}
   #else
@@ -414,8 +415,8 @@ struct dafny_rwlock_monitor {
 struct dafny_nr_monitor{
   nr_helper helper;
 
-  dafny_nr_monitor(size_t n_threads)
-    : helper{n_threads}
+  dafny_nr_monitor(size_t n_threads,  core_map& in_cores)
+    : helper{n_threads, in_cores}
   {
     helper.init_nr();
   }
@@ -427,9 +428,9 @@ struct dafny_nr_monitor{
   uint64_t read(uint8_t thread_id, uint32_t core_id, void* context, uint64_t key) {
     auto c = static_cast<nr::ThreadOwnedContext*>(context);
 #if USE_COUNTER
-    auto op = CounterIfc_Compile::ReadonlyOp{}; 
+    auto op = CounterIfc_Compile::ReadonlyOp{};
 #else
-    auto op = VSpaceIfc_Compile::ReadonlyOp{key}; 
+    auto op = VSpaceIfc_Compile::ReadonlyOp{key};
 #endif
     Tuple<uint64_t, nr::ThreadOwnedContext> r =
       nr::__default::do__read(
@@ -444,9 +445,9 @@ struct dafny_nr_monitor{
   void update(uint8_t thread_id, uint32_t core_id, void* context, uint64_t key, uint64_t value) {
     auto c = static_cast<nr::ThreadOwnedContext*>(context);
 #if USE_COUNTER
-    auto op = CounterIfc_Compile::UpdateOp{}; 
+    auto op = CounterIfc_Compile::UpdateOp{};
 #else
-    auto op = VSpaceIfc_Compile::UpdateOp{key, value}; 
+    auto op = VSpaceIfc_Compile::UpdateOp{key, value};
 #endif
     nr::__default::do__update(
       helper.get_nr(),
@@ -470,8 +471,8 @@ struct dafny_nr_monitor{
 struct rust_nr_monitor{
   nr_rust_helper helper;
 
-  rust_nr_monitor(size_t n_threads)
-    : helper{n_threads}
+  rust_nr_monitor(size_t n_threads, core_map& in_cores)
+    : helper{n_threads, in_cores}
   {
     helper.init_nr();
   }
@@ -607,9 +608,11 @@ int main(int argc, char* argv[]) {
     run_id
   };
 
+
+
 #define BENCHMARK(test_name) \
   if (bench_name == #test_name) { \
-    test_name ## _monitor monitor{n_threads}; \
+    test_name ## _monitor monitor{n_threads, state.cores}; \
     bench(state, monitor); \
     exit(0); \
   }

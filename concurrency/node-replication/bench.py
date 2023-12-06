@@ -33,8 +33,10 @@ CORES_PER_NODE = count_cores_per_numa_node()
 NODES = count_numa_nodes()
 MAX_THREADS = NODES * CORES_PER_NODE
 
+MODES=['fill', 'interleave']
 NR_BENCHES = ['dafny_nr', 'rust_nr']
 OTHER_BENCHES = ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
+OTHER_BENCHES = []
 #READS_PCT = [100, 95, 50, 0, 90]
 READS_PCT = [100, 90, 0]
 
@@ -101,18 +103,18 @@ def run_all():
         for reads_pct in READS_PCT:
             for n_threads in N_THREADS:
                 n_replicas = min(math.ceil(n_threads / (CORES_PER_NODE / 2)), NODES)
-                mode = 'fill'
-                for bench in NR_BENCHES:
-                    if (n_threads < n_replicas):
-                        continue
-                    run(bench, n_replicas, n_threads, reads_pct, run_id_num, mode)
+                for mode in MODES:
+                    for bench in NR_BENCHES:
+                        if (n_threads < n_replicas):
+                            continue
+                        run(bench, n_replicas, n_threads, reads_pct, run_id_num, mode)
 
-                for bench in OTHER_BENCHES:
-                    run(bench, 1, n_threads, reads_pct, run_id_num, mode)
+                    for bench in OTHER_BENCHES:
+                        run(bench, 1, n_threads, reads_pct, run_id_num, mode)
 
-                combine_data_files()
-                subprocess.run('./plot.py', shell=True, check=False)
-                subprocess.run('cp *.json *.png *.pdf *.pgf plot.py runs/%s' % run_id, shell=True, check=False)
+                    combine_data_files()
+                    subprocess.run('./plot.py', shell=True, check=False)
+                    subprocess.run('cp *.json *.png *.pdf *.pgf plot.py runs/%s' % run_id, shell=True, check=False)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
