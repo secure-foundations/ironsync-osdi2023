@@ -22,6 +22,8 @@
 #include <mutex>
 #include <condition_variable>
 
+#include <numa.h>
+
 #include <memory>
 
 using LinearExtern::lseq;
@@ -70,7 +72,7 @@ class nr_helper {
   nr::NR& get_nr() { return *nr; }
 
   static uint32_t get_node_id(uint32_t core_id) {
-    return core_id  % NRConstants_Compile::__default::NUM__REPLICAS;
+    return numa_node_of_cpu(core_id);
   }
 
   nr::Node* get_node(uint32_t core_id) {
@@ -162,7 +164,7 @@ class nr_rust_helper {
   }
 
   static uint32_t get_node_id(uint32_t core_id) {
-    return core_id % NRConstants_Compile::__default::NUM__REPLICAS;
+    return numa_node_of_cpu(core_id);
   }
 
   ReplicaWrapper *get_node(uint32_t core_id)
