@@ -27,12 +27,13 @@ def count_cores_per_numa_node():
                 cores += 1
     return cores
 
-SECONDS = 10
+SECONDS = 60
 
 CORES_PER_NODE = count_cores_per_numa_node()
 NODES = count_numa_nodes()
 MAX_THREADS = NODES * CORES_PER_NODE
 
+MODES=['fill', 'interleave']
 NR_BENCHES = ['dafny_nr', 'rust_nr']
 OTHER_BENCHES = ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
 #READS_PCT = [100, 95, 50, 0, 90]
@@ -100,19 +101,26 @@ def run_all():
         run_id_num = run_id + '-' + str(run_num)
         for reads_pct in READS_PCT:
             for n_threads in N_THREADS:
-                n_replicas = min(math.ceil(n_threads / (CORES_PER_NODE / 2)), NODES)
-                mode = 'fill'
-                for bench in NR_BENCHES:
+                for mode in MODES:
+                    if mode == 'interleave' :
+                        # here we need to have a replica per thread at least.
+                        n_replicas = min(n_threads, NODES)
+                    else :
+                        # here we are filling up numa nodes, so take as many replicas as we need
+                        n_replicas = min(math.ceil(n_threads / (CORES_PER_NODE / 2)), NODES)
+
                     if (n_threads < n_replicas):
                         continue
-                    run(bench, n_replicas, n_threads, reads_pct, run_id_num, mode)
 
-                for bench in OTHER_BENCHES:
-                    run(bench, 1, n_threads, reads_pct, run_id_num, mode)
+                    for bench in NR_BENCHES:
+                        run(bench, n_replicas, n_threads, reads_pct, run_id_num, mode)
 
-                combine_data_files()
-                subprocess.run('./plot.py', shell=True, check=False)
-                subprocess.run('cp *.json *.png *.pdf *.pgf plot.py runs/%s' % run_id, shell=True, check=False)
+                    for bench in OTHER_BENCHES:
+                        run(bench, 1, n_threads, reads_pct, run_id_num, mode)
+
+                    combine_data_files()
+                    subprocess.run('./plot.py', shell=True, check=False)
+                    subprocess.run('cp *.json *.png *.pdf *.pgf plot.py runs/%s' % run_id, shell=True, check=False)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
