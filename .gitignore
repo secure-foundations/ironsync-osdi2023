@@ -17,3 +17,4 @@
 /.dafny
 /expresults
 .dotnet
+dotnet-install.sh
