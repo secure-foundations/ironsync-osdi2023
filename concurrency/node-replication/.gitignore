@@ -6,3 +6,7 @@ app
 main.o
 vspace_glue.o
 *.runtimeconfig.json
+app-1replicas
+app-2replicas
+app-3replicas
+app-4replicas

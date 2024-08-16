@@ -36,6 +36,7 @@ MAX_THREADS = NODES * CORES_PER_NODE
 MODES=['fill', 'interleave']
 NR_BENCHES = ['dafny_nr', 'rust_nr']
 OTHER_BENCHES = ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
+OTHER_BENCHES = []
 #READS_PCT = [100, 95, 50, 0, 90]
 READS_PCT = [100, 90, 0]
 
