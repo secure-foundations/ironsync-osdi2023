@@ -120,8 +120,7 @@ def run_all():
                         run(bench, 1, n_threads, reads_pct, run_id_num, mode)
 
                     combine_data_files()
-                    subprocess.run('./plot.py', shell=True, check=False)
-                    subprocess.run('cp *.json *.png *.pdf *.pgf plot.py runs/%s' % run_id, shell=True, check=False)
+                    subprocess.run('cp *.json runs/%s' % run_id, shell=True, check=False)
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
