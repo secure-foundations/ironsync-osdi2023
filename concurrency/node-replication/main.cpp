@@ -33,7 +33,7 @@ class key_generator {
   //
   //static constexpr uint64_t MASK = 0x3fffffffff & ~0xfff; // 256 GiB
   static constexpr uint64_t MASK = 0x7fffffffff & ~0xfff; // 512 GiB
-  
+
 
 public:
   key_generator(uint8_t thread_id)
@@ -128,7 +128,7 @@ struct benchmark_state {
           << "," << std::endl
         << "  \"ops_per_s\": "
           << static_cast<double>(total_reads + total_updates) / run_seconds.count()
-          << "," << std::endl
+          << std::endl
         << "}" << std::endl;
   }
 };
@@ -427,9 +427,9 @@ struct dafny_nr_monitor{
   uint64_t read(uint8_t thread_id, uint32_t core_id, void* context, uint64_t key) {
     auto c = static_cast<nr::ThreadOwnedContext*>(context);
 #if USE_COUNTER
-    auto op = CounterIfc_Compile::ReadonlyOp{}; 
+    auto op = CounterIfc_Compile::ReadonlyOp{};
 #else
-    auto op = VSpaceIfc_Compile::ReadonlyOp{key}; 
+    auto op = VSpaceIfc_Compile::ReadonlyOp{key};
 #endif
     Tuple<uint64_t, nr::ThreadOwnedContext> r =
       nr::__default::do__read(
@@ -444,9 +444,9 @@ struct dafny_nr_monitor{
   void update(uint8_t thread_id, uint32_t core_id, void* context, uint64_t key, uint64_t value) {
     auto c = static_cast<nr::ThreadOwnedContext*>(context);
 #if USE_COUNTER
-    auto op = CounterIfc_Compile::UpdateOp{}; 
+    auto op = CounterIfc_Compile::UpdateOp{};
 #else
-    auto op = VSpaceIfc_Compile::UpdateOp{key, value}; 
+    auto op = VSpaceIfc_Compile::UpdateOp{key, value};
 #endif
     nr::__default::do__update(
       helper.get_nr(),
