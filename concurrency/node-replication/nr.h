@@ -72,7 +72,7 @@ class nr_helper {
   nr::NR& get_nr() { return *nr; }
 
   static uint32_t get_node_id(uint32_t core_id) {
-    return core_id % 4; // numa_node_of_cpu(core_id);
+    return core_id % num_replicas();
   }
 
   nr::Node* get_node(uint32_t core_id) {
@@ -164,8 +164,7 @@ class nr_rust_helper {
   }
 
   static uint32_t get_node_id(uint32_t core_id) {
-    return core_id % 4;
-    // return numa_node_of_cpu(core_id);
+    return core_id % num_replicas();
   }
 
   ReplicaWrapper *get_node(uint32_t core_id)
@@ -199,7 +198,7 @@ class nr_rust_helper {
     // fixed if we want to use this harness.
     auto context = nodes.at(node_id)->RegisterWrapper();
 
-    std::cerr << "thread on core_id" << core_id
+    std::cerr << "thread on core_id " << core_id
               << " registered with node_id " << node_id
               << " context " << context
               << std::endl;

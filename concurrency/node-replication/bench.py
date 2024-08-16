@@ -80,8 +80,8 @@ def run_all():
     print(f'Found {NODES} NUMA nodes with {CORES_PER_NODE} cores each')
 
     subprocess.run('sudo sh -c "echo %s > /sys/kernel/mm/transparent_hugepage/enabled"' % ('never', 'always')[TRANSPARENT_HUGEPAGES], shell=True, check=False)
-    for nid in range(0, 4):
-        subprocess.run('sudo sh -c "echo 4 > /sys/devices/system/node/node{}/hugepages/hugepages-1048576kB/nr_hugepages"'.format(nid), shell=True, check=False)
+    for nid in range(0, NODES):
+        subprocess.run('sudo sh -c "echo 16 > /sys/devices/system/node/node{}/hugepages/hugepages-1048576kB/nr_hugepages"'.format(nid), shell=True, check=False)
 
     subprocess.run('rm data*.json *throughput*.pdf *throughput*.png', shell=True, check=False)
 
