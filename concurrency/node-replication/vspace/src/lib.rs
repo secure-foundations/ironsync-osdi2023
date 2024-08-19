@@ -14,8 +14,8 @@ use std::pin::Pin;
 use log::{debug, trace};
 use x86::bits64::paging::*;
 
-use node_replication::{Log, Replica, Dispatch, ReplicaToken};
-const VSPACE_RANGE: u64 = 512*1024*1024*1024; 
+use node_replication::{Dispatch, Log, Replica, ReplicaToken};
+const VSPACE_RANGE: u64 = 512 * 1024 * 1024 * 1024;
 
 #[cxx::bridge]
 mod ffi {
@@ -193,18 +193,17 @@ impl ReplicaWrapper {
 
 pub fn createReplica(log: &'static LogWrapper) -> &'static mut ReplicaWrapper {
     let inner = Replica::new(&log.0);
-    Box::leak(Box::new(ReplicaWrapper{ log, inner }))
+    Box::leak(Box::new(ReplicaWrapper { log, inner }))
 }
 
 pub struct LogWrapper(Arc<Log<'static, Modify>>);
 
 pub fn createLog() -> &'static mut LogWrapper {
-    const TWO_MIB: usize = 2*1024*1024;
+    const TWO_MIB: usize = 2 * 1024 * 1024;
     let log = Arc::new(Log::new(TWO_MIB));
 
     Box::leak(Box::new(LogWrapper(log)))
 }
-
 
 pub struct VSpace {
     pub pml4: Pin<Box<PML4>>,
@@ -220,52 +219,49 @@ unsafe impl Send for VSpace {}
 /// We support a mutable put operation on the hashmap.
 #[derive(Debug, PartialEq, Clone)]
 pub enum Modify {
-   Map(u64, u64),
+    Map(u64, u64),
 }
 
 /// We support an immutable read operation to lookup a key from the hashmap.
 #[derive(Debug, PartialEq, Clone)]
 pub enum Access {
-   Resolve(u64),
+    Resolve(u64),
 }
 
 /// The Dispatch traits executes `ReadOperation` (our Access enum)
 /// and `WriteOperation` (our Modify enum) against the replicated
 /// data-structure.
 impl Dispatch for VSpace {
-   type ReadOperation = Access;
-   type WriteOperation = Modify;
-   type Response = u64;
+    type ReadOperation = Access;
+    type WriteOperation = Modify;
+    type Response = u64;
 
-   /// The `dispatch` function applies the immutable operations.
-   fn dispatch(&self, op: Self::ReadOperation) -> Self::Response {
-       match op {
-           Access::Resolve(key) => self.resolveWrapped(key),
-       }
-   }
+    /// The `dispatch` function applies the immutable operations.
+    fn dispatch(&self, op: Self::ReadOperation) -> Self::Response {
+        match op {
+            Access::Resolve(key) => self.resolveWrapped(key),
+        }
+    }
 
-   /// The `dispatch_mut` function applies the mutable operations.
-   fn dispatch_mut(
-       &mut self,
-       op: Self::WriteOperation,
-   ) -> Self::Response {
-       match op {
-           Modify::Map(key, value) => self.mapGenericWrapped(key, value, 0x1000) as u64,
-       }
-   }
+    /// The `dispatch_mut` function applies the mutable operations.
+    fn dispatch_mut(&mut self, op: Self::WriteOperation) -> Self::Response {
+        match op {
+            Modify::Map(key, value) => self.mapGenericWrapped(key, value, 0x1000) as u64,
+        }
+    }
 }
 
 /*
-        pub fn mapGenericWrapped(
-            self: &mut VSpace,
-            vbase: u64,
-            pregion: u64,
-            pregion_len: usize,
-            //rights: &MapAction,
-        ) -> bool;
+       pub fn mapGenericWrapped(
+           self: &mut VSpace,
+           vbase: u64,
+           pregion: u64,
+           pregion_len: usize,
+           //rights: &MapAction,
+       ) -> bool;
 
-        pub fn resolveWrapped(self: &mut VSpace, vbase: u64) -> u64;
- */
+       pub fn resolveWrapped(self: &mut VSpace, vbase: u64) -> u64;
+*/
 
 impl Drop for VSpace {
     fn drop(&mut self) {
@@ -294,16 +290,15 @@ pub fn alloc(size: usize, ps: usize) -> mmap::MemoryMap {
     use libc;
     use libc::{MAP_ANON, MAP_HUGETLB, MAP_POPULATE, MAP_SHARED};
     use mmap;
-    
+
     const MAP_HUGE_SHIFT: usize = 26;
     const MAP_HUGE_2MB: i32 = 21 << MAP_HUGE_SHIFT;
     const MAP_HUGE_1GB: i32 = 30 << MAP_HUGE_SHIFT;
-    
+
     pub const FOUR_KIB: usize = 4 * 1024;
     const PAGESIZE: u64 = FOUR_KIB as u64;
-    
-    
-    assert!(size % FOUR_KIB == 0|| size % TWO_MIB ==0 || size % ONE_GIB ==0);
+
+    assert!(size % FOUR_KIB == 0 || size % TWO_MIB == 0 || size % ONE_GIB == 0);
 
     let mut non_standard_flags = MAP_SHARED | MAP_ANON | MAP_POPULATE;
     match ps {
@@ -336,7 +331,7 @@ pub fn alloc(size: usize, ps: usize) -> mmap::MemoryMap {
 pub fn createVSpace() -> &'static mut VSpace {
     //env_logger::try_init();
     //log::error!("createVSpace");
-    let mapping = alloc(3*ONE_GIB, ONE_GIB); 
+    let mapping = alloc(3 * ONE_GIB, ONE_GIB);
     let mem_ptr = mapping.data();
 
     //unsafe { alloc::alloc::alloc(core::alloc::Layout::from_size_align_unchecked(1075851264, 4096)) };
@@ -348,25 +343,25 @@ pub fn createVSpace() -> &'static mut VSpace {
         //allocs: Vec::with_capacity(1024),
         mapping,
         mem_counter: 4096,
-        mem_ptr
+        mem_ptr,
     }));
 
     for i in 0..VSPACE_RANGE / 4096 {
-        assert!(vs.map_generic(
-            VAddr::from(i * 4096),
-            (PAddr::from(i * 4096), 4096),
-            MapAction::ReadWriteExecuteUser,
-        ).is_ok());
+        assert!(vs
+            .map_generic(
+                VAddr::from(i * 4096),
+                (PAddr::from(i * 4096), 4096),
+                MapAction::ReadWriteExecuteUser,
+            )
+            .is_ok());
     }
 
     vs
 }
 
-
 impl Default for VSpace {
     fn default() -> VSpace {
-        
-        let mapping = alloc(3*ONE_GIB, ONE_GIB); 
+        let mapping = alloc(3 * ONE_GIB, ONE_GIB);
         let mem_ptr = mapping.data();
 
         // make sure the memory for ptable is some contiguous block
@@ -381,19 +376,17 @@ impl Default for VSpace {
             ),
             mapping,
             mem_counter: 4096,
-            mem_ptr
-            //allocs: Vec::with_capacity(1024),
+            mem_ptr, //allocs: Vec::with_capacity(1024),
         };
         for i in 0..VSPACE_RANGE / 4096 {
-            assert!(vs.map_generic(
-                VAddr::from(i * 4096),
-                (PAddr::from(i * 4096), 4096),
-                MapAction::ReadWriteExecuteUser,
-            ).is_ok());
+            assert!(vs
+                .map_generic(
+                    VAddr::from(i * 4096),
+                    (PAddr::from(i * 4096), 4096),
+                    MapAction::ReadWriteExecuteUser,
+                )
+                .is_ok());
         }
-
-        log::error!("vs.mem_counter {}", vs.mem_counter);
-
         vs
     }
 }
@@ -597,7 +590,7 @@ impl VSpace {
         while mapped < psize && pt_idx < 512 {
             // XXX: allow updates
             //if !pt[pt_idx].is_present() {
-                pt[pt_idx] = PTEntry::new(pbase + mapped, PTFlags::P | rights.to_pt_rights());
+            pt[pt_idx] = PTEntry::new(pbase + mapped, PTFlags::P | rights.to_pt_rights());
             //} else {
             //    return Err(VSpaceError { at: vbase.as_u64() });
             //}
@@ -637,7 +630,7 @@ impl VSpace {
                 how_many * BASE_PAGE_SIZE,
                 4096,
             ))*/
-            assert!(self.mem_counter < 3*ONE_GIB); // if this triggers you need to adjust the alloc size of `mem_ptr`
+            assert!(self.mem_counter < 3 * ONE_GIB); // if this triggers you need to adjust the alloc size of `mem_ptr`
             self.mem_ptr.offset(self.mem_counter as isize)
         };
         self.mem_counter += how_many * 4096;
@@ -684,7 +677,10 @@ impl VSpace {
     }
 
     pub fn resolveWrapped(&self, addr: u64) -> u64 {
-        let a = self.resolve_addr(VAddr::from(addr)).map(|pa| pa.as_u64()).unwrap_or(0x0);
+        let a = self
+            .resolve_addr(VAddr::from(addr))
+            .map(|pa| pa.as_u64())
+            .unwrap_or(0x0);
         //log::error!("{:#x} -> {:#x}", addr, a);
         a
     }
@@ -723,11 +719,11 @@ impl VSpace {
                     }
                 }
             }
-        }else {
+        } else {
             // log::error!("pml4 not present {:#x}", addr);
             unreachable!("dont go here");
         }
-        
+
         unreachable!("dont go here");
         None
     }
@@ -891,15 +887,14 @@ fn silly() {
     assert!(vs.mapGenericWrapped((VSPACE_RANGE) - 4096, 0xd000, 0x1000));
     assert!(vs.resolveWrapped((VSPACE_RANGE) - 4096) == 0xd000);
 
+    /*        pub fn mapGenericWrapped(
+                self: &mut VSpace,
+                vbase: u64,
+                pregion: u64,
+                pregion_len: usize,
+                //rights: &MapAction,
+            ) -> bool;
 
-/*        pub fn mapGenericWrapped(
-            self: &mut VSpace,
-            vbase: u64,
-            pregion: u64,
-            pregion_len: usize,
-            //rights: &MapAction,
-        ) -> bool;
-
-        pub fn resolveWrapped(self: &mut VSpace, vbase: u64) -> u64;
-*/
+            pub fn resolveWrapped(self: &mut VSpace, vbase: u64) -> u64;
+    */
 }
