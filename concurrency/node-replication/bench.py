@@ -33,7 +33,10 @@ CORES_PER_NODE = count_cores_per_numa_node()
 NODES = count_numa_nodes()
 MAX_THREADS = NODES * CORES_PER_NODE
 
-MODES=['fill', 'interleave']
+MODES=[
+    'fill'
+    # , 'interleave' -- disable for speeding up SOSP'24 artifact evaluation
+]
 NR_BENCHES = ['dafny_nr', 'rust_nr']
 OTHER_BENCHES = ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
 OTHER_BENCHES = []
