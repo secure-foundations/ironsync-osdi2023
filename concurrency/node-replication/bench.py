@@ -32,14 +32,17 @@ SECONDS = 60
 CORES_PER_NODE = count_cores_per_numa_node()
 NODES = count_numa_nodes()
 MAX_THREADS = NODES * CORES_PER_NODE
+N_THREADS = [MAX_THREADS, 4] + [i * (CORES_PER_NODE // NODES) for i in range(1, NODES * NODES)]
+
+print(f"Used Threads: {N_THREADS}")
 
 MODES=[
-    'fill'
-    # , 'interleave' -- disable for speeding up SOSP'24 artifact evaluation
+    'fill',
+    'interleave'
 ]
 NR_BENCHES = ['dafny_nr', 'rust_nr']
-OTHER_BENCHES = ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
-OTHER_BENCHES = []
+OTHER_BENCHES = [] # -- we don't run other benchers ['dafny_rwlock', 'shfllock', 'mcs', 'cpp_shared_mutex']
+
 #READS_PCT = [100, 95, 50, 0, 90]
 READS_PCT = [100, 90, 0]
 
@@ -47,12 +50,8 @@ ITERS = 1
 
 TRANSPARENT_HUGEPAGES = True
 
-def reorder(l):
-  if len(l) < 2:
-    return l
-  p = len(l) // 2
-  return [l[p]] + reorder(l[p+1:] + l[:p])
-N_THREADS = [MAX_THREADS, 4] + reorder(list(range(12, MAX_THREADS, 12)))
+
+
 
 def bench_path(n_replicas):
     p = './app-%dreplicas' % n_replicas

@@ -8,7 +8,7 @@ name = "vspace"
 crate-type = ["staticlib", "rlib"]
 
 [dependencies]
-x86 = "0.43"
+x86 = "0.52"
 log = "0.4"
 cxx = "1.0"
 env_logger = "*"
